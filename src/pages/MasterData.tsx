@@ -1,7 +1,9 @@
+import { useMemo, useState } from 'react'
 import { useAppSelector } from '@/store/hooks'
 import { Category, MasterDataItem } from '@/store/slices/masterDataSlice'
 import { Tag, Layers, Box } from 'lucide-react'
-import { useState } from 'react'
+import { DataTable } from '@/components/DataTable'
+import type { ColumnDef } from '@tanstack/react-table'
 
 type TabId = 'categories' | 'tags' | 'attributes'
 
@@ -11,20 +13,64 @@ const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'attributes', label: 'Attributes', icon: Box },
 ]
 
+const categoryColumns: ColumnDef<Category, unknown>[] = [
+  { accessorKey: 'name', header: 'Category', cell: ({ getValue }) => <span className="font-medium text-slate-900">{String(getValue())}</span> },
+  { accessorKey: 'slug', header: 'Slug', cell: ({ getValue }) => <span className="text-slate-500 font-mono text-sm">{String(getValue())}</span> },
+  { accessorKey: 'productCount', header: 'Products', cell: ({ getValue }) => <span className="text-slate-600 block text-right">{Number(getValue())}</span> },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ getValue }) => (
+      <span
+        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+          getValue() === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+        }`}
+      >
+        {String(getValue())}
+      </span>
+    ),
+  },
+]
+
+function buildMasterDataItemColumns(firstHeader: string): ColumnDef<MasterDataItem, unknown>[] {
+  return [
+    { accessorKey: 'name', header: firstHeader, cell: ({ getValue }) => <span className="font-medium text-slate-900">{String(getValue())}</span> },
+    { accessorKey: 'code', header: 'Code', cell: ({ getValue }) => <span className="text-slate-500 font-mono text-sm">{String(getValue())}</span> },
+    { accessorKey: 'usageCount', header: 'Usage', cell: ({ getValue }) => <span className="text-slate-600 block text-right">{Number(getValue())}</span> },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ getValue }) => (
+        <span
+          className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+            getValue() === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {String(getValue())}
+        </span>
+      ),
+    },
+  ]
+}
+
 export function MasterData() {
   const { categories, tags, attributes } = useAppSelector((s) => s.masterData)
   const [activeTab, setActiveTab] = useState<TabId>('categories')
 
+  const categoryCols = useMemo(() => categoryColumns, [])
+  const tagCols = useMemo(() => buildMasterDataItemColumns('Tag'), [])
+  const attrCols = useMemo(() => buildMasterDataItemColumns('Attribute'), [])
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-display font-bold text-white">Master Data</h1>
-        <p className="text-slate-400 mt-1">
+        <h1 className="text-2xl font-display font-bold text-slate-900">Master Data</h1>
+        <p className="text-slate-600 mt-1">
           Categories, tags, and attributes for your catalog
         </p>
       </div>
 
-      <div className="flex gap-2 border-b border-slate-700 pb-2">
+      <div className="flex gap-2 border-b border-slate-200 pb-2">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -32,8 +78,8 @@ export function MasterData() {
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === id
-                ? 'bg-primary-600/20 text-primary-400'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -42,163 +88,15 @@ export function MasterData() {
         ))}
       </div>
 
-      <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-        {activeTab === 'categories' && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-700/50">
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Category
-                  </th>
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Slug
-                  </th>
-                  <th className="text-right py-3 px-5 text-slate-400 font-medium text-sm">
-                    Products
-                  </th>
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat: Category) => (
-                  <tr
-                    key={cat.id}
-                    className="border-b border-slate-700/30 hover:bg-slate-800/50"
-                  >
-                    <td className="py-3 px-5 font-medium text-slate-200">
-                      {cat.name}
-                    </td>
-                    <td className="py-3 px-5 text-slate-500 font-mono text-sm">
-                      {cat.slug}
-                    </td>
-                    <td className="py-3 px-5 text-right text-slate-300">
-                      {cat.productCount}
-                    </td>
-                    <td className="py-3 px-5">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                          cat.status === 'active'
-                            ? 'bg-emerald-500/20 text-emerald-400'
-                            : 'bg-slate-500/20 text-slate-400'
-                        }`}
-                      >
-                        {cat.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {activeTab === 'tags' && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-700/50">
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Tag
-                  </th>
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Code
-                  </th>
-                  <th className="text-right py-3 px-5 text-slate-400 font-medium text-sm">
-                    Usage
-                  </th>
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {tags.map((item: MasterDataItem) => (
-                  <tr
-                    key={item.id}
-                    className="border-b border-slate-700/30 hover:bg-slate-800/50"
-                  >
-                    <td className="py-3 px-5 font-medium text-slate-200">
-                      {item.name}
-                    </td>
-                    <td className="py-3 px-5 text-slate-500 font-mono text-sm">
-                      {item.code}
-                    </td>
-                    <td className="py-3 px-5 text-right text-slate-300">
-                      {item.usageCount}
-                    </td>
-                    <td className="py-3 px-5">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                          item.status === 'active'
-                            ? 'bg-emerald-500/20 text-emerald-400'
-                            : 'bg-slate-500/20 text-slate-400'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {activeTab === 'attributes' && (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-700/50">
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Attribute
-                  </th>
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Code
-                  </th>
-                  <th className="text-right py-3 px-5 text-slate-400 font-medium text-sm">
-                    Usage
-                  </th>
-                  <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {attributes.map((item: MasterDataItem) => (
-                  <tr
-                    key={item.id}
-                    className="border-b border-slate-700/30 hover:bg-slate-800/50"
-                  >
-                    <td className="py-3 px-5 font-medium text-slate-200">
-                      {item.name}
-                    </td>
-                    <td className="py-3 px-5 text-slate-500 font-mono text-sm">
-                      {item.code}
-                    </td>
-                    <td className="py-3 px-5 text-right text-slate-300">
-                      {item.usageCount}
-                    </td>
-                    <td className="py-3 px-5">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                          item.status === 'active'
-                            ? 'bg-emerald-500/20 text-emerald-400'
-                            : 'bg-slate-500/20 text-slate-400'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {activeTab === 'categories' && (
+        <DataTable columns={categoryCols} data={categories} getRowId={(row) => row.id} defaultPageSize={10} />
+      )}
+      {activeTab === 'tags' && (
+        <DataTable columns={tagCols} data={tags} getRowId={(row) => row.id} defaultPageSize={10} />
+      )}
+      {activeTab === 'attributes' && (
+        <DataTable columns={attrCols} data={attributes} getRowId={(row) => row.id} defaultPageSize={10} />
+      )}
     </div>
   )
 }

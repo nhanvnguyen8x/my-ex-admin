@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useAppSelector } from '@/store/hooks'
 import {
   LineChart,
@@ -20,6 +21,8 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react'
+import { DataTable } from '@/components/DataTable'
+import type { ColumnDef } from '@tanstack/react-table'
 
 const iconMap: Record<string, React.ElementType> = {
   users: Users,
@@ -28,15 +31,50 @@ const iconMap: Record<string, React.ElementType> = {
   star: Star,
 }
 
+type TopProduct = { id: string; name: string; reviews: number; rating: number }
+
 export function Dashboard() {
   const { stats, reviewsOverTime, reviewsByCategory, topProducts } =
     useAppSelector((s) => s.dashboard)
 
+  const topProductColumns = useMemo<ColumnDef<TopProduct, unknown>[]>(
+    () => [
+      {
+        id: 'rank',
+        header: '#',
+        enableSorting: false,
+        cell: ({ row }) => <span className="text-slate-500 text-sm">{row.index + 1}</span>,
+      },
+      {
+        accessorKey: 'name',
+        header: 'Product',
+        cell: ({ getValue }) => <span className="font-medium text-slate-900">{String(getValue())}</span>,
+      },
+      {
+        accessorKey: 'reviews',
+        header: 'Reviews',
+        cell: ({ getValue }) => <span className="text-slate-600 block text-right">{Number(getValue()).toLocaleString()}</span>,
+      },
+      {
+        id: 'rating',
+        accessorFn: (row) => row.rating,
+        header: 'Avg. Rating',
+        cell: ({ row }) => (
+          <span className="inline-flex items-center gap-1 text-amber-600">
+            <Star className="w-4 h-4 fill-current" />
+            {row.original.rating}
+          </span>
+        ),
+      },
+    ],
+    []
+  )
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-display font-bold text-white">Dashboard</h1>
-        <p className="text-slate-400 mt-1">Overview of your review platform</p>
+        <h1 className="text-2xl font-display font-bold text-slate-900">Dashboard</h1>
+        <p className="text-slate-600 mt-1">Overview of your review platform</p>
       </div>
 
       {/* Stat cards */}
@@ -47,23 +85,23 @@ export function Dashboard() {
           return (
             <div
               key={stat.id}
-              className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5 hover:border-slate-600/50 transition-colors"
+              className="bg-white border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors shadow-sm"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">{stat.title}</p>
-                  <p className="text-2xl font-display font-bold text-white mt-1">
+                  <p className="text-slate-600 text-sm font-medium">{stat.title}</p>
+                  <p className="text-2xl font-display font-bold text-slate-900 mt-1">
                     {stat.value}
                   </p>
                   <div className="flex items-center gap-1.5 mt-2">
                     {isPositive ? (
-                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <TrendingUp className="w-4 h-4 text-emerald-600" />
                     ) : (
-                      <TrendingDown className="w-4 h-4 text-rose-500" />
+                      <TrendingDown className="w-4 h-4 text-rose-600" />
                     )}
                     <span
                       className={`text-sm font-medium ${
-                        isPositive ? 'text-emerald-400' : 'text-rose-400'
+                        isPositive ? 'text-emerald-600' : 'text-rose-600'
                       }`}
                     >
                       {isPositive ? '+' : ''}
@@ -72,8 +110,8 @@ export function Dashboard() {
                     <span className="text-slate-500 text-sm">{stat.changeLabel}</span>
                   </div>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-primary-600/20 flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-primary-400" />
+                <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                  <Icon className="w-6 h-6 text-primary-600" />
                 </div>
               </div>
             </div>
@@ -83,23 +121,23 @@ export function Dashboard() {
 
       {/* Charts row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5">
-          <h3 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">
             Reviews over time
           </h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={reviewsOverTime} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
+                <YAxis stroke="#64748b" fontSize={12} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#1e293b',
-                    border: '1px solid #334155',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
                     borderRadius: '8px',
                   }}
-                  labelStyle={{ color: '#e2e8f0' }}
+                  labelStyle={{ color: '#0f172a' }}
                 />
                 <Line
                   type="monotone"
@@ -114,8 +152,8 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-5">
-          <h3 className="text-lg font-semibold text-white mb-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">
             Reviews by category
           </h3>
           <div className="h-72">
@@ -152,55 +190,20 @@ export function Dashboard() {
       </div>
 
       {/* Top products table */}
-      <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-        <div className="p-5 border-b border-slate-700/50">
-          <h3 className="text-lg font-semibold text-white">Top products by reviews</h3>
-          <p className="text-slate-400 text-sm mt-0.5">
+      <div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-slate-900">Top products by reviews</h3>
+          <p className="text-slate-600 text-sm mt-0.5">
             Most reviewed products in the platform
           </p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700/50">
-                <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                  #
-                </th>
-                <th className="text-left py-3 px-5 text-slate-400 font-medium text-sm">
-                  Product
-                </th>
-                <th className="text-right py-3 px-5 text-slate-400 font-medium text-sm">
-                  Reviews
-                </th>
-                <th className="text-right py-3 px-5 text-slate-400 font-medium text-sm">
-                  Avg. Rating
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {topProducts.map((product, index) => (
-                <tr
-                  key={product.id}
-                  className="border-b border-slate-700/30 hover:bg-slate-800/50 transition-colors"
-                >
-                  <td className="py-3 px-5 text-slate-500 text-sm">{index + 1}</td>
-                  <td className="py-3 px-5 text-slate-200 font-medium">
-                    {product.name}
-                  </td>
-                  <td className="py-3 px-5 text-right text-slate-300">
-                    {product.reviews.toLocaleString()}
-                  </td>
-                  <td className="py-3 px-5 text-right">
-                    <span className="inline-flex items-center gap-1 text-amber-400">
-                      <Star className="w-4 h-4 fill-current" />
-                      {product.rating}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={topProductColumns}
+          data={topProducts}
+          getRowId={(row) => row.id}
+          defaultPageSize={5}
+          pageSizeOptions={[5, 10, 20]}
+        />
       </div>
     </div>
   )
