@@ -18,19 +18,11 @@ interface ProductsState {
   total: number
 }
 
-const mockProducts: Product[] = [
-  { id: '1', name: 'Wireless Headphones Pro', category: 'Electronics', sku: 'WH-PRO-001', status: 'active', reviewCount: 2847, avgRating: 4.8, updatedAt: '2024-06-01' },
-  { id: '2', name: 'Smart Watch Series X', category: 'Electronics', sku: 'SW-X-002', status: 'active', reviewCount: 1923, avgRating: 4.6, updatedAt: '2024-06-02' },
-  { id: '3', name: 'Organic Skincare Set', category: 'Beauty', sku: 'OSS-003', status: 'active', reviewCount: 1654, avgRating: 4.9, updatedAt: '2024-05-28' },
-  { id: '4', name: 'Running Shoes Ultra', category: 'Sports', sku: 'RSU-004', status: 'active', reviewCount: 1432, avgRating: 4.5, updatedAt: '2024-05-30' },
-  { id: '5', name: 'Coffee Maker Deluxe', category: 'Home', sku: 'CMD-005', status: 'draft', reviewCount: 0, avgRating: 0, updatedAt: '2024-06-05' },
-]
-
 const initialState: ProductsState = {
-  list: mockProducts,
+  list: [],
   selectedProduct: null,
   loading: false,
-  total: mockProducts.length,
+  total: 0,
 }
 
 const productsSlice = createSlice({

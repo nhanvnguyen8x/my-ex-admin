@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
-import { useAppSelector } from '@/store/hooks'
+import { useMemo, useState, useEffect } from 'react'
+import { useAppSelector, useAppDispatch } from '@/store/hooks'
+import { setCategories, setTags, setAttributes, setLoading } from '@/store/slices/masterDataSlice'
 import { Category, MasterDataItem } from '@/store/slices/masterDataSlice'
+import { getCategories, getTags, getAttributes } from '@/api/masterData'
 import { Tag, Layers, Box } from 'lucide-react'
 import { DataTable } from '@/components/DataTable'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -35,7 +37,7 @@ const categoryColumns: ColumnDef<Category, unknown>[] = [
 function buildMasterDataItemColumns(firstHeader: string): ColumnDef<MasterDataItem, unknown>[] {
   return [
     { accessorKey: 'name', header: firstHeader, cell: ({ getValue }) => <span className="font-medium text-slate-900">{String(getValue())}</span> },
-    { accessorKey: 'code', header: 'Code', cell: ({ getValue }) => <span className="text-slate-500 font-mono text-sm">{String(getValue())}</span> },
+    { accessorKey: 'code', header: 'Code', cell: ({ getValue }) => <span className="text-slate-500 font-mono text-sm">{String(getValue()) ?? '—'}</span> },
     { accessorKey: 'usageCount', header: 'Usage', cell: ({ getValue }) => <span className="text-slate-600 block text-right">{Number(getValue())}</span> },
     {
       accessorKey: 'status',
@@ -53,9 +55,65 @@ function buildMasterDataItemColumns(firstHeader: string): ColumnDef<MasterDataIt
   ]
 }
 
+function mapCategory(api: { id: string; name: string; slug: string; productCount?: number; status?: string }): Category {
+  return {
+    id: api.id,
+    name: api.name,
+    slug: api.slug,
+    productCount: api.productCount ?? 0,
+    status: (api.status === 'inactive' ? 'inactive' : 'active') as Category['status'],
+  }
+}
+
+function mapMasterDataItem(
+  api: { id: string; name: string; code?: string; status?: string; usageCount?: number },
+  type: MasterDataItem['type']
+): MasterDataItem {
+  return {
+    id: api.id,
+    type,
+    name: api.name,
+    code: api.code,
+    status: api.status ?? 'active',
+    usageCount: api.usageCount ?? 0,
+  }
+}
+
 export function MasterData() {
-  const { categories, tags, attributes } = useAppSelector((s) => s.masterData)
+  const dispatch = useAppDispatch()
+  const token = useAppSelector((s) => s.auth.token)
+  const { categories, tags, attributes, loading } = useAppSelector((s) => s.masterData)
   const [activeTab, setActiveTab] = useState<TabId>('categories')
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    dispatch(setLoading(true))
+    setError(null)
+    Promise.all([
+      getCategories(token).then((arr) => (cancelled ? [] : arr.map(mapCategory))),
+      getTags(token).then((arr) => (cancelled ? [] : arr.map((t) => mapMasterDataItem(t, 'tag')))),
+      getAttributes(token).then((arr) => (cancelled ? [] : arr.map((a) => mapMasterDataItem(a, 'attribute')))),
+    ])
+      .then(([cats, tagItems, attrItems]) => {
+        if (cancelled) return
+        dispatch(setCategories(cats))
+        dispatch(setTags(tagItems))
+        dispatch(setAttributes(attrItems))
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load master data')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) dispatch(setLoading(false))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token, dispatch])
 
   const categoryCols = useMemo(() => categoryColumns, [])
   const tagCols = useMemo(() => buildMasterDataItemColumns('Tag'), [])
@@ -69,6 +127,15 @@ export function MasterData() {
           Categories, tags, and attributes for your catalog
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-lg bg-rose-50 text-rose-800 px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
+      {loading && (
+        <div className="text-slate-500 text-sm">Loading master data…</div>
+      )}
 
       <div className="flex gap-2 border-b border-slate-200 pb-2">
         {tabs.map(({ id, label, icon: Icon }) => (
